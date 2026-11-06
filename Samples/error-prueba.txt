@@ -1,0 +1,3 @@
+Registro correcto
+ERROR_TEST simula una falla para validar el estado Failed
+Otro registro correcto

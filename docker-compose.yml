@@ -1,0 +1,36 @@
+services:
+  api:
+    env_file:
+      - .env
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04
+    container_name: batchdb
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DBSA_PASSWORD}"
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./scripts:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+
+  sql-init:
+    image: mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04
+    depends_on:
+      - sqlserver
+    volumes:
+      - ./scripts:/scripts
+    command: >
+      /bin/bash -c "
+      sleep 30;
+      /opt/mssql-tools18/bin/sqlcmd
+      -S sqlserver
+      -U sa
+      -P '${DBSA_PASSWORD}'
+      -C
+      -i /scripts/init.sql
+      "  
+
+volumes:
+  sqlserver_data:
