@@ -1,10 +1,22 @@
 services:
   api:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: batchapi
     env_file:
       - .env
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-CU18-ubuntu-22.04
     container_name: batchdb
+    env_file:
+      - .env
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: "${DBSA_PASSWORD}"
@@ -23,11 +35,15 @@ services:
       - ./scripts:/scripts
     command: >
       /bin/bash -c "
-      sleep 30;
+      until /opt/mssql-tools18/bin/sqlcmd -S sqlserver -U sa -P \"$DBSA_PASSWORD\" -C -Q 'SELECT 1'; do
+      echo 'Esperando SQL Server...';
+      sleep 5;
+      done;
+      
       /opt/mssql-tools18/bin/sqlcmd
       -S sqlserver
       -U sa
-      -P '${DBSA_PASSWORD}'
+      -P \"$DBSA_PASSWORD\"
       -C
       -i /scripts/init.sql
       "  
